@@ -58,7 +58,7 @@ expresiones
   / val:$literales isCase:"i"? {
     return new n.String(val.replace(/['"]/g, ''), isCase);
   }
-  / "(" _ opciones _ ")"
+  / "(" _ exprs:opciones _ ")"
   / chars:clase isCase:"i"? {
     return new n.Clase(chars, isCase)
   }

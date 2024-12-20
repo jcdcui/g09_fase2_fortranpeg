@@ -6,6 +6,7 @@ const nodes = {
     String: ['val', 'isCase'],
     Clase: ['chars', 'isCase'],
     Rango: ['bottom', 'top'],
+    
 };
 
 export default nodes;

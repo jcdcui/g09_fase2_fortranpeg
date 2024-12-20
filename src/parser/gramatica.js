@@ -296,7 +296,7 @@ function peg$parse(input, options) {
     return new n.String(val.replace(/['"]/g, ''), isCase);
   };
   var peg$f7 = function(chars, isCase) {
-    return new n.Clase(chars, isCase)
+    return new n.Clase(chars, isCase ? isCase : null)
   };
   var peg$f8 = function(bottom, top) {
     return new n.Rango(bottom, top);
