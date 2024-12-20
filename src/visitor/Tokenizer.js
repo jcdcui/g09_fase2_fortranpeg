@@ -77,32 +77,31 @@ end module tokenizer
         `;
         }
     }
-    
-    
 
     generateCaracteres(chars) {
         if (chars.length === 0) return '';
         return `
-    if (findloc([${chars
-        .map((char) => `"${char}"`)
-        .join(', ')}], input(i:i), 1) > 0) then
-        lexeme = input(cursor:i)
-        cursor = i + 1
-        return
-    end if
-        `;
+        if (findloc([${chars
+            .map((char) => `to_lower("${char}")`)
+            .join(', ')}], to_lower(input(i:i)), 1) > 0) then
+            lexeme = input(cursor:i)
+            cursor = i + 1
+            return
+        end if
+            `;
     }
+
 
     visitClase(node) {
         return `
     i = cursor
     ${this.generateCaracteres(
-        node.chars.filter((node) => typeof node === 'string')
-    )}
+            node.chars.filter((node) => typeof node === 'string')
+        )}
     ${node.chars
-        .filter((node) => node instanceof Rango)
-        .map((range) => range.accept(this))
-        .join('\n')}
+                .filter((node) => node instanceof Rango)
+                .map((range) => range.accept(this))
+                .join('\n')}
         `;
     }
 
