@@ -50,7 +50,7 @@ const analizar = () => {
       
         const texto = fileContents+'\n'+JSON.stringify(cst,null,2)
         //salida.setValue(JSON.stringify(cst));
-        salida.setValue(texto);
+        //salida.setValue(texto);
         const blob = new Blob([fileContents], { type: 'text/plain' });
         const url = URL.createObjectURL(blob);
         const button = document.getElementById('BotonDescarga');
