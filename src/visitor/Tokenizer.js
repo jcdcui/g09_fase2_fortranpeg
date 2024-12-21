@@ -237,9 +237,9 @@ if ("${node.val}" == input(cursor:cursor + ${node.val.length - 1})) then
             .filter((char) => typeof char === 'string')
             .map(char => {
                 if (isCase) {
-                    return `(input(i:i) == to_lower("${char}") .or. input(i:i) == to_lower("${char})")`;
+                    return `(input(i:i) == ${this.toAsciiString(char,0)} .or. input(i:i) == ${this.toAsciiString(char,1)})`;
                 } else {
-                    return `input(i:i) == "${char}"`;
+                    return `input(i:i) == ${this.toAsciiString(char,2)}`;
                 }
             });
     
@@ -247,9 +247,10 @@ if ("${node.val}" == input(cursor:cursor + ${node.val.length - 1})) then
             .filter((char) => char instanceof Rango)
             .map(range => {
                 if (isCase) {
-                    return `((input(i:i) >= to_lower("${range.bottom}") .and. input(i:i) <= "${range.top}")`;
+                    return `((input(i:i) >= ${this.toAsciiString(range.bottom,0)} .and. input(i:i) <= ${this.toAsciiString(range.top,0)}) .or. &
+                            (input(i:i) >= ${this.toAsciiString(range.bottom,1)} .and. input(i:i) <= ${this.toAsciiString(range.bottom,1)}))`;
                 } else {
-                    return `(input(i:i) >= "${range.bottom}" .and. input(i:i) <= "${range.top}")`;
+                    return `(input(i:i) >= ${this.toAsciiString(range.bottom,2)} .and. input(i:i) <= ${this.toAsciiString(range.bottom,2)})`;
                 }
             });
     
@@ -260,13 +261,11 @@ if ("${node.val}" == input(cursor:cursor + ${node.val.length - 1})) then
             if (${conditions}) then
                 lexeme = input(cursor:i)
                 cursor = i + 1
-           
+       
         `;
     }
     
     
-    
-
     visitIdentificador(node){
         if (variables.hasOwnProperty(node.id)) {
                 return variables[node.id];
@@ -277,66 +276,29 @@ if ("${node.val}" == input(cursor:cursor + ${node.val.length - 1})) then
     
 
     // Metodos auxiliares**************************************************************************
-    visitRangoCaseInsensitive(node) {
-        return `
-        if (to_lower(input(i:i)) >= to_lower("${node.bottom}") .and. to_lower(input(i:i)) <= to_lower("${node.top}")) then
-            lexeme = input(cursor:i)
-            cursor = i + 1
-        `;
-    }
-    
-    generateCaracteres(chars) {
-        if (chars.length === 0) return '';
-        let caracteres = chars.map((char) => `"${char}"`)
-        console.log(caracteres)
-        let vars = this.formatCharsToAsciiString(caracteres)
-        console.log(vars)
-        return `
-        if (findloc(${vars}, input(i:i), 1) > 0) then
-            lexeme = input(cursor:i)
-            cursor = i + 1
-        `;
-    }
-// Función para convertir un carácter a su código ASCII
- char_to_ascii(char) {
-    return char.charCodeAt(0);
-}
 
-// Función principal para convertir un array de caracteres a códigos ASCII y formatearlos
-formatCharsToAsciiString(chars) {
+toAsciiString(char,num) {
+    console.log(char)
     const charMap = {
-        '"\\t"': 9,  // Tab
-        '"\\n"': 10, // Nueva línea
-        '"\\r"': 13, // Retorno de carro
-        '" "': 32   // Espacio
+        '\\t': 9,  
+        '\\n': 10, 
+        '\\r': 13, 
+        ' ': 32   
     };
 
-    const asciiCodes = chars.map((char) => {
-        if (char in charMap) {
-            return charMap[char];
-        } else {
-            // Retirar las comillas dobles del inicio y fin de cada elemento
-            const actualChar = char.slice(1, -1);
-            return thischar_to_ascii(actualChar);
+    
+    if (char in charMap) {
+        return `char(${charMap[char]})`;
+    } else {
+        if (char >= 'A' && char <= 'Z' && num == 1) {
+            char = String.fromCharCode(char.charCodeAt(0) + 32);
+        }else if(char >= 'a' && char <= 'a' && num == 0){
+            char = String.fromCharCode(char.charCodeAt(0) - 32);
         }
-    });
+            
+        return `char(${char.charCodeAt(0)})`;
+    }
 
-    const formattedString = asciiCodes.map((code) => `char(${code})`).join(', ');
-
-    return `[${formattedString}]`;
 }
 
-
-    generateCaracteresCaseInsensitive(chars) {
-        if (chars.length === 0) return '';
-        return `
-        if (findloc([${chars.map((char) => `to_lower("${char}")`).join(', ')}], to_lower(input(i:i)), 1) > 0) then
-            lexeme = input(cursor:i)
-            cursor = i + 1
-        `;
-    }
-    
-    
-    
-    
 }
