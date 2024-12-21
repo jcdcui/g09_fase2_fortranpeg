@@ -54,23 +54,29 @@ varios = ("!"/"$"/"@"/"&")
 expresiones
   = id:identificador {
     usos.push(id)
+    return new n.Identificador(id);
   }
   / val:$literales isCase:"i"? {
     return new n.String(val.replace(/['"]/g, ''), isCase);
   }
-  / "(" _ exprs:opciones _ ")"
+  / "(" _ @opciones _ ")"
   / chars:clase isCase:"i"? {
-    return new n.Clase(chars, isCase)
+    return new n.Clase(chars, isCase);
   }
-  / "."
-  / "!."
+  / "." {
+    return new n.Punto();
+  }
+  / "!." {
+    return new n.Fin();
+  }
 
 // conteo = "|" parteconteo _ (_ delimitador )? _ "|"
 
-conteo = "|" _ (numero / id:identificador) _ "|"
-        / "|" _ (numero / id:identificador)? _ ".." _ (numero / id2:identificador)? _ "|"
-        / "|" _ (numero / id:identificador)? _ "," _ opciones _ "|"
-        / "|" _ (numero / id:identificador)? _ ".." _ (numero / id2:identificador)? _ "," _ opciones _ "|"
+conteo
+  = "|" _ (numero / id:identificador) _ "|"
+  / "|" _ (numero / id:identificador)? _ ".." _ (numero / id2:identificador)? _ "|"
+  / "|" _ (numero / id:identificador)? _ "," _ opciones _ "|"
+  / "|" _ (numero / id:identificador)? _ ".." _ (numero / id2:identificador)? _ "," _ opciones _ "|"
 
 // parteconteo = identificador
 //             / [0-9]? _ ".." _ [0-9]?
@@ -83,10 +89,14 @@ clase
   = "[" @contenidoClase+ "]"
 
 contenidoClase
-  = bottom:$[^\[\]] "-" top:$[^\[\]] {
+  = bottom:$caracter "-" top:$caracter {
     return new n.Rango(bottom, top);
   }
-  / $[^\[\]]
+  / $caracter
+
+caracter
+  = [^\[\]\\]
+  / "\\" .
 
 literales
   = '"' @stringDobleComilla* '"'
@@ -121,14 +131,11 @@ secuenciaFinLinea = "\r\n" / "\n" / "\r" / "\u2028" / "\u2029"
 //     "\"" [^"]* "\""
 //     / "'" [^']* "'"
     
-
 numero = [0-9]+
 
 identificador = [_a-z]i[_a-z0-9]i* { return text() }
 
-
 _ = (Comentarios /[ \t\n\r])*
-
 
 Comentarios = 
     "//" [^\n]* 

@@ -1,6 +1,7 @@
 import Visitor from './Visitor.js';
 import { Rango } from './CST.js';
 
+
 export default class Tokenizer extends Visitor {
     generateTokenizer(grammar) {
         return `
@@ -14,7 +15,9 @@ function nextSym(input, cursor) result(lexeme)
     character(len=:), allocatable :: lexeme
     integer :: i
     character(len=:), allocatable :: buffer
+    character(len=:), allocatable :: bufferConc
     integer :: count
+    integer :: carro
 
     if (cursor > len(input)) then
         allocate(character(len=3) :: lexeme)
@@ -43,19 +46,66 @@ function to_lower(str) result(lower_str)
     end do
 end function to_lower
 end module tokenizer
+
         `;
     }
 
     visitProducciones(node) {
+
         return node.expr.accept(this);
     }
 
     visitOpciones(node) {
+        
         return node.exprs.map((node) => node.accept(this)).join('\n');
     }
 
     visitUnion(node) {
-        return node.exprs.map((node) => node.accept(this)).join('\n');
+
+const nullExprCount = node.exprs.filter(expr => expr === null).length;
+
+console.log(nullExprCount);
+const nullQtyCount = node.exprs.filter(expr => expr.qty).length;
+console.log(nullQtyCount);
+
+        let final = ""
+ 
+        for (let i = 0; i < node.exprs.length-nullQtyCount; i++) 
+                { final += 'end if\n';}
+        
+        if(node.exprs.length == 1){
+            let concNodos = node.exprs.map((node) => node.accept(this)).join('');
+            
+            return `
+${concNodos}
+return
+${final} 
+        `
+        }else{
+           
+       let unirExp = `
+        bufferConc = bufferConc // lexeme  
+                    `;
+       let concNodos = node.exprs.map((node) => node.accept(this)).join(unirExp);
+       let concatenacion = `
+bufferConc = ""
+carro = cursor
+    ${concNodos}
+        bufferConc = bufferConc // lexeme 
+        if (allocated(lexeme)) deallocate(lexeme)
+        allocate(character(len=len(bufferConc)) :: lexeme)
+        lexeme = bufferConc
+        return         
+   ${final}
+    cursor = carro
+                    `;
+                    
+                    return concatenacion;
+        }
+
+        
+      
+
     }
 
     visitExpresion(node) {
@@ -78,18 +128,16 @@ end if
 end do
 
 if (len(buffer) == 0) then
-    lexeme = "END"
+    lexeme = ""
 else
 if (allocated(lexeme)) deallocate(lexeme)
     allocate(character(len=len(buffer)) :: lexeme)
     lexeme = buffer
-return
-end if
-
+    end if
                     `;
                 case '+': // Uno o más
                     return `
-!! Inicializar variables
+! Inicializar variables
 buffer = ""
 count = 0
 do
@@ -102,34 +150,50 @@ end if
 end do
 
 if (len(buffer) == 0) then
-    lexeme = "END"
+    lexeme = "ERROR"
+    print *, "error lexico en col ", cursor, ', "' // input(cursor:cursor) // '"'
+    return
 else
 if (allocated(lexeme)) deallocate(lexeme)
     allocate(character(len=len(buffer)) :: lexeme)
     lexeme = buffer
-return
-end if
+    end if
                     `;
                 case '?': // Cero o uno
                     return `
-${generatedCode}
-else 
-    allocate(character(len=3) :: lexeme) 
-    lexeme = "END" 
+! Inicializar variables
+buffer = ""
+count = 0
+do
+    if (cursor > len(input)) exit
+    ${generatedCode}
+    count = 1
+    if(count > 0) then
+        buffer = buffer // lexeme
+        exit
+    end if
+else
+    exit
 end if
-return`;
+end do
+
+if (len(buffer) == 0) then
+    lexeme = ""
+else
+if (allocated(lexeme)) deallocate(lexeme)
+    allocate(character(len=len(buffer)) :: lexeme)
+    lexeme = buffer
+    end if
+                    
+`;
                 default:
                     return `
-                    ${generatedCode}
-                    return
-                    end if        `;
+                    ${generatedCode}`;
             }
         }
 
         return `
-${generatedCode}
-return
-end if        `;
+${generatedCode}`;
     }
 
     visitString(node) {
@@ -181,6 +245,11 @@ if ("${node.val}" == input(cursor:cursor + ${node.val.length - 1})) then
             cursor = i + 1
         `;
     }
+
+    visitIdentificador(node){
+        console.log("aun no")
+        return '';
+    }
     
 
     // Metodos auxiliares**************************************************************************
@@ -210,12 +279,4 @@ if ("${node.val}" == input(cursor:cursor + ${node.val.length - 1})) then
         `;
     }
     
-    
-    
-    
 }
-
-
-
-
-
