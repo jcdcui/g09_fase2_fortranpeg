@@ -1,7 +1,10 @@
 import Visitor from './Visitor.js';
 import { Rango } from './CST.js';
+let variables = {
 
+}
 
+let actualID = ""
 export default class Tokenizer extends Visitor {
     generateTokenizer(grammar) {
         return `
@@ -56,7 +59,7 @@ end module tokenizer
     }
 
     visitOpciones(node) {
-        
+
         return node.exprs.map((node) => node.accept(this)).join('\n');
     }
 
@@ -75,7 +78,7 @@ console.log(nullQtyCount);
         
         if(node.exprs.length == 1){
             let concNodos = node.exprs.map((node) => node.accept(this)).join('');
-            
+
             return `
 ${concNodos}
 return
@@ -245,11 +248,6 @@ if ("${node.val}" == input(cursor:cursor + ${node.val.length - 1})) then
             cursor = i + 1
         `;
     }
-
-    visitIdentificador(node){
-        console.log("aun no")
-        return '';
-    }
     
 
     // Metodos auxiliares**************************************************************************
@@ -278,5 +276,8 @@ if ("${node.val}" == input(cursor:cursor + ${node.val.length - 1})) then
             cursor = i + 1
         `;
     }
+    
+    
+    
     
 }

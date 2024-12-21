@@ -33,7 +33,7 @@ const analizar = () => {
     errores.length = 0;
     try {
         const cst = parse(entrada);
-        console.log(cst)
+
         if (errores.length > 0) {
             salida.setValue(`Error: ${errores[0].message}`);
             return;
@@ -47,10 +47,6 @@ const analizar = () => {
 
         const tokenizer = new Tokenizer();
         const fileContents = tokenizer.generateTokenizer(cst);
-      
-        const texto = fileContents+'\n'+JSON.stringify(cst,null,2)
-        //salida.setValue(JSON.stringify(cst));
-        //salida.setValue(texto);
         const blob = new Blob([fileContents], { type: 'text/plain' });
         const url = URL.createObjectURL(blob);
         const button = document.getElementById('BotonDescarga');
