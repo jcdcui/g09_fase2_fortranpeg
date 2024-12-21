@@ -1,10 +1,6 @@
 import Visitor from './Visitor.js';
 import { Rango } from './CST.js';
-let variables = {
 
-}
-
-let actualID = ""
 export default class Tokenizer extends Visitor {
     generateTokenizer(grammar) {
         return `
@@ -48,13 +44,19 @@ function to_lower(str) result(lower_str)
         end if
     end do
 end function to_lower
+function char_to_ascii(character) result(ascii_code)
+    character(len=1), intent(in) :: character
+    integer :: ascii_code
+
+    ascii_code = iachar(character)
+end function char_to_ascii
+
 end module tokenizer
 
         `;
     }
 
     visitProducciones(node) {
-
         return node.expr.accept(this);
     }
 
@@ -64,7 +66,7 @@ end module tokenizer
     }
 
     visitUnion(node) {
-
+       
 const nullExprCount = node.exprs.filter(expr => expr === null).length;
 
 console.log(nullExprCount);
@@ -78,16 +80,16 @@ console.log(nullQtyCount);
         
         if(node.exprs.length == 1){
             let concNodos = node.exprs.map((node) => node.accept(this)).join('');
+          
 
             return `
 ${concNodos}
 return
-${final} 
+end if
         `
         }else{
            
-       let unirExp = `
-        bufferConc = bufferConc // lexeme  
+       let unirExp = `\nend if \nbufferConc = bufferConc // lexeme  
                     `;
        let concNodos = node.exprs.map((node) => node.accept(this)).join(unirExp);
        let concatenacion = `
@@ -99,10 +101,10 @@ carro = cursor
         allocate(character(len=len(bufferConc)) :: lexeme)
         lexeme = bufferConc
         return         
-   ${final}
+   end if
     cursor = carro
                     `;
-                    
+                    variables[actualID].push(concNodos)
                     return concatenacion;
         }
 
@@ -124,6 +126,7 @@ count = 0
 do
     if (cursor > len(input)) exit
     ${generatedCode}
+    count = 1
     buffer = buffer // lexeme
 else
     exit
@@ -136,7 +139,8 @@ else
 if (allocated(lexeme)) deallocate(lexeme)
     allocate(character(len=len(buffer)) :: lexeme)
     lexeme = buffer
-    end if
+
+ 
                     `;
                 case '+': // Uno o más
                     return `
@@ -186,7 +190,7 @@ else
 if (allocated(lexeme)) deallocate(lexeme)
     allocate(character(len=len(buffer)) :: lexeme)
     lexeme = buffer
-    end if
+    
                     
 `;
                 default:
@@ -221,32 +225,54 @@ if ("${node.val}" == input(cursor:cursor + ${node.val.length - 1})) then
         }
     }
 
-
+    visitRango(node) {
+        return node.accept(this);
+    }
     
     visitClase(node) {
         const isCase = node.isCase !== null;
+        let conditions = ``;
+    
+        const charConditions = node.chars
+            .filter((char) => typeof char === 'string')
+            .map(char => {
+                if (isCase) {
+                    return `(input(i:i) == to_lower("${char}") .or. input(i:i) == to_lower("${char})")`;
+                } else {
+                    return `input(i:i) == "${char}"`;
+                }
+            });
+    
+        const rangeConditions = node.chars
+            .filter((char) => char instanceof Rango)
+            .map(range => {
+                if (isCase) {
+                    return `((input(i:i) >= to_lower("${range.bottom}") .and. input(i:i) <= "${range.top}")`;
+                } else {
+                    return `(input(i:i) >= "${range.bottom}" .and. input(i:i) <= "${range.top}")`;
+                }
+            });
+    
+        conditions = charConditions.concat(rangeConditions).join(' .or. &\n');
+    
         return `
-        i = cursor
-        ${isCase 
-            ? this.generateCaracteresCaseInsensitive(
-                node.chars.filter((node) => typeof node === 'string')
-            )
-            : this.generateCaracteres(
-                node.chars.filter((node) => typeof node === 'string')
-            )}
-        ${node.chars
-            .filter((node) => node instanceof Rango)
-            .map((range) => isCase ? this.visitRangoCaseInsensitive(range) : this.visitRango(range))
-            .join('\n')}
+            i = cursor
+            if (${conditions}) then
+                lexeme = input(cursor:i)
+                cursor = i + 1
+           
         `;
     }
     
-    visitRango(node) {
-        return `
-        if (input(i:i) >= "${node.bottom}" .and. input(i:i) <= "${node.top}") then
-            lexeme = input(cursor:i)
-            cursor = i + 1
-        `;
+    
+    
+
+    visitIdentificador(node){
+        if (variables.hasOwnProperty(node.id)) {
+                return variables[node.id];
+            }
+        console.log("aun no")
+        return '';
     }
     
 
@@ -261,13 +287,46 @@ if ("${node.val}" == input(cursor:cursor + ${node.val.length - 1})) then
     
     generateCaracteres(chars) {
         if (chars.length === 0) return '';
+        let caracteres = chars.map((char) => `"${char}"`)
+        console.log(caracteres)
+        let vars = this.formatCharsToAsciiString(caracteres)
+        console.log(vars)
         return `
-        if (findloc([${chars.map((char) => `"${char}"`).join(', ')}], input(i:i), 1) > 0) then
+        if (findloc(${vars}, input(i:i), 1) > 0) then
             lexeme = input(cursor:i)
             cursor = i + 1
         `;
     }
-    
+// Función para convertir un carácter a su código ASCII
+ char_to_ascii(char) {
+    return char.charCodeAt(0);
+}
+
+// Función principal para convertir un array de caracteres a códigos ASCII y formatearlos
+formatCharsToAsciiString(chars) {
+    const charMap = {
+        '"\\t"': 9,  // Tab
+        '"\\n"': 10, // Nueva línea
+        '"\\r"': 13, // Retorno de carro
+        '" "': 32   // Espacio
+    };
+
+    const asciiCodes = chars.map((char) => {
+        if (char in charMap) {
+            return charMap[char];
+        } else {
+            // Retirar las comillas dobles del inicio y fin de cada elemento
+            const actualChar = char.slice(1, -1);
+            return thischar_to_ascii(actualChar);
+        }
+    });
+
+    const formattedString = asciiCodes.map((code) => `char(${code})`).join(', ');
+
+    return `[${formattedString}]`;
+}
+
+
     generateCaracteresCaseInsensitive(chars) {
         if (chars.length === 0) return '';
         return `
