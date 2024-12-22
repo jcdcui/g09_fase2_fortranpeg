@@ -293,7 +293,7 @@ toAsciiString(char,num) {
     } else {
         if (char >= 'A' && char <= 'Z' && num == 1) {
             char = String.fromCharCode(char.charCodeAt(0) + 32);
-        }else if(char >= 'a' && char <= 'a' && num == 0){
+        }else if(char >= 'a' && char <= 'z' && num == 0){
             char = String.fromCharCode(char.charCodeAt(0) - 32);
         }
             
