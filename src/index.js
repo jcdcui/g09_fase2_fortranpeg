@@ -1,7 +1,6 @@
 import * as monaco from 'https://cdn.jsdelivr.net/npm/monaco-editor@0.50.0/+esm';
 import { parse } from './parser/gramatica.js';
-import Tokenizer from './tokenizer/Tokenizer.js';
-import { ErrorReglas } from './parser/error.js';
+import { generateTokenizer } from './tokenizer/utils.js';
 
 export let ids = [];
 export let usos = [];
@@ -26,16 +25,18 @@ const salida = monaco.editor.create(document.getElementById('salida'), {
 let decorations = [];
 
 // Analizar contenido del editor
+let cst;
 const analizar = () => {
     const entrada = editor.getValue();
     ids.length = 0;
     usos.length = 0;
     errores.length = 0;
     try {
-        const cst = parse(entrada);
+        cst = parse(entrada);
 
         if (errores.length > 0) {
             salida.setValue(`Error: ${errores[0].message}`);
+            cst = null;
             return;
         } else {
             salida.setValue('Análisis Exitoso');
@@ -44,14 +45,8 @@ const analizar = () => {
         // salida.setValue("Análisis Exitoso");
         // Limpiar decoraciones previas si la validación es exitosa
         decorations = editor.deltaDecorations(decorations, []);
-
-        const tokenizer = new Tokenizer();
-        const fileContents = tokenizer.generateTokenizer(cst);
-        const blob = new Blob([fileContents], { type: 'text/plain' });
-        const url = URL.createObjectURL(blob);
-        const button = document.getElementById('BotonDescarga');
-        button.href = url;
     } catch (e) {
+        cst = null;
         if (e.location === undefined) {
             salida.setValue(`Error: ${e.message}`);
         } else {
@@ -92,6 +87,30 @@ const analizar = () => {
 // Escuchar cambios en el contenido del editor
 editor.onDidChangeModelContent(() => {
     analizar();
+});
+
+let downloadHappening = false;
+const button = document.getElementById('BotonDescarga');
+button.addEventListener('click', () => {
+    if (downloadHappening) return;
+    if (!cst) {
+        alert('Escribe una gramatica valida');
+        return;
+    }
+    let url;
+    generateTokenizer(cst)
+        .then((fileContents) => {
+            const blob = new Blob([fileContents], { type: 'text/plain' });
+            url = URL.createObjectURL(blob);
+            button.href = url;
+            downloadHappening = true;
+            button.click();
+        })
+        .finally(() => {
+            URL.revokeObjectURL(url);
+            button.href = '#';
+            downloadHappening = false;
+        });
 });
 
 // CSS personalizado para resaltar el error y agregar un warning
