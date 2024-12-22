@@ -1,6 +1,7 @@
 import Visitor from './Visitor.js';
 import { Rango } from './CST.js';
 
+
 export default class Tokenizer extends Visitor {
     generateTokenizer(grammar) {
         return `
@@ -12,7 +13,7 @@ function nextSym(input, cursor) result(lexeme)
     character(len=*), intent(in) :: input
     integer, intent(inout) :: cursor
     character(len=:), allocatable :: lexeme
-    integer :: i
+    integer :: i,j
     character(len=:), allocatable :: buffer
     character(len=:), allocatable :: bufferConc
     integer :: count
@@ -44,29 +45,23 @@ function to_lower(str) result(lower_str)
         end if
     end do
 end function to_lower
-function char_to_ascii(character) result(ascii_code)
-    character(len=1), intent(in) :: character
-    integer :: ascii_code
-
-    ascii_code = iachar(character)
-end function char_to_ascii
-
 end module tokenizer
 
         `;
     }
 
     visitProducciones(node) {
+
         return node.expr.accept(this);
     }
 
     visitOpciones(node) {
-
+        
         return node.exprs.map((node) => node.accept(this)).join('\n');
     }
 
     visitUnion(node) {
-       
+
 const nullExprCount = node.exprs.filter(expr => expr === null).length;
 
 console.log(nullExprCount);
@@ -80,31 +75,40 @@ console.log(nullQtyCount);
         
         if(node.exprs.length == 1){
             let concNodos = node.exprs.map((node) => node.accept(this)).join('');
-          
-
+            if(nullExprCount>0){
+            return `
+            ${concNodos.substring(0,concNodos.lastIndexOf("end if"))}
+            return
+            end if 
+                        `
+            }else{
             return `
 ${concNodos}
 return
-end if
+end if 
         `
+            }
+
         }else{
            
-       let unirExp = `\nend if \nbufferConc = bufferConc // lexeme  
-                    `;
+       let unirExp = `\nbufferConc = bufferConc // lexeme`;
        let concNodos = node.exprs.map((node) => node.accept(this)).join(unirExp);
-       let concatenacion = `
+       let concatenacion = 
+`
 bufferConc = ""
 carro = cursor
-    ${concNodos}
-        bufferConc = bufferConc // lexeme 
-        if (allocated(lexeme)) deallocate(lexeme)
-        allocate(character(len=len(bufferConc)) :: lexeme)
-        lexeme = bufferConc
-        return         
-   end if
-    cursor = carro
+    ${concNodos}   
+bufferConc = bufferConc // lexeme
+if(len(bufferConc) > 0) then
+if (allocated(lexeme)) deallocate(lexeme)
+allocate(character(len=len(bufferConc)) :: lexeme)
+lexeme = bufferConc
+return  
+end if
+${final} 
+cursor = carro
                     `;
-                    variables[actualID].push(concNodos)
+                    
                     return concatenacion;
         }
 
@@ -123,10 +127,8 @@ carro = cursor
 ! Inicializar variables
 buffer = ""
 count = 0
-do
-    if (cursor > len(input)) exit
+do j = cursor, len(input)
     ${generatedCode}
-    count = 1
     buffer = buffer // lexeme
 else
     exit
@@ -136,11 +138,11 @@ end do
 if (len(buffer) == 0) then
     lexeme = ""
 else
-if (allocated(lexeme)) deallocate(lexeme)
-    allocate(character(len=len(buffer)) :: lexeme)
-    lexeme = buffer
+    if (allocated(lexeme)) deallocate(lexeme)
+        allocate(character(len=len(buffer)) :: lexeme)
+        lexeme = buffer
+        end if
 
- 
                     `;
                 case '+': // Uno o más
                     return `
@@ -164,8 +166,7 @@ else
 if (allocated(lexeme)) deallocate(lexeme)
     allocate(character(len=len(buffer)) :: lexeme)
     lexeme = buffer
-    end if
-                    `;
+    end if`;
                 case '?': // Cero o uno
                     return `
 ! Inicializar variables
@@ -190,7 +191,7 @@ else
 if (allocated(lexeme)) deallocate(lexeme)
     allocate(character(len=len(buffer)) :: lexeme)
     lexeme = buffer
-    
+    end if
                     
 `;
                 default:
@@ -248,9 +249,9 @@ if ("${node.val}" == input(cursor:cursor + ${node.val.length - 1})) then
             .map(range => {
                 if (isCase) {
                     return `((input(i:i) >= ${this.toAsciiString(range.bottom,0)} .and. input(i:i) <= ${this.toAsciiString(range.top,0)}) .or. &
-                            (input(i:i) >= ${this.toAsciiString(range.bottom,1)} .and. input(i:i) <= ${this.toAsciiString(range.bottom,1)}))`;
+                            (input(i:i) >= ${this.toAsciiString(range.bottom,1)} .and. input(i:i) <= ${this.toAsciiString(range.top,1)}))`;
                 } else {
-                    return `(input(i:i) >= ${this.toAsciiString(range.bottom,2)} .and. input(i:i) <= ${this.toAsciiString(range.bottom,2)})`;
+                    return `(input(i:i) >= ${this.toAsciiString(range.bottom,2)} .and. input(i:i) <= ${this.toAsciiString(range.top,2)})`;
                 }
             });
     
