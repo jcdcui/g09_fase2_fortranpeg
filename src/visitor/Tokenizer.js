@@ -64,9 +64,9 @@ end module tokenizer
 
 const nullExprCount = node.exprs.filter(expr => expr === null).length;
 
-console.log(nullExprCount);
+console.log("T: "+node.exprs.length);
 const nullQtyCount = node.exprs.filter(expr => expr.qty).length;
-console.log(nullQtyCount);
+console.log("Q: "+nullQtyCount);
 
         let final = ""
  
@@ -74,10 +74,12 @@ console.log(nullQtyCount);
                 { final += 'end if\n';}
         
         if(node.exprs.length == 1){
+            console.log("__________");
             let concNodos = node.exprs.map((node) => node.accept(this)).join('');
-            if(nullExprCount>0){
+            if(nullQtyCount>0){
+                console.log("nullQtyCount");
             return `
-            ${concNodos.substring(0,concNodos.lastIndexOf("end if"))}
+            ${this.removeLastEndIf(concNodos)}
             return
             end if 
                         `
@@ -99,12 +101,14 @@ bufferConc = ""
 carro = cursor
     ${concNodos}   
 bufferConc = bufferConc // lexeme
-if(len(bufferConc) > 0) then
-if (allocated(lexeme)) deallocate(lexeme)
-allocate(character(len=len(bufferConc)) :: lexeme)
-lexeme = bufferConc
-return  
+if (len(bufferConc) > 0 .and. index(bufferConc, "ERROR") == 0) then
+    
+    if (allocated(lexeme)) deallocate(lexeme)
+    allocate(character(len=len(bufferConc)) :: lexeme)
+    lexeme = bufferConc
+    return
 end if
+
 ${final} 
 cursor = carro
                     `;
@@ -141,16 +145,13 @@ else
     if (allocated(lexeme)) deallocate(lexeme)
         allocate(character(len=len(buffer)) :: lexeme)
         lexeme = buffer
-        end if
-
-                    `;
+        end if`;
                 case '+': // Uno o más
                     return `
 ! Inicializar variables
 buffer = ""
 count = 0
-do
-    if (cursor > len(input)) exit
+do j = cursor, len(input)
     ${generatedCode}
     buffer = buffer // lexeme
 else
@@ -160,26 +161,19 @@ end do
 
 if (len(buffer) == 0) then
     lexeme = "ERROR"
-    print *, "error lexico en col ", cursor, ', "' // input(cursor:cursor) // '"'
-    return
 else
-if (allocated(lexeme)) deallocate(lexeme)
-    allocate(character(len=len(buffer)) :: lexeme)
-    lexeme = buffer
-    end if`;
+    if (allocated(lexeme)) deallocate(lexeme)
+        allocate(character(len=len(buffer)) :: lexeme)
+        lexeme = buffer
+        end if`;
                 case '?': // Cero o uno
                     return `
-! Inicializar variables
+!! Inicializar variables
 buffer = ""
 count = 0
-do
-    if (cursor > len(input)) exit
+do j = 1, 1
     ${generatedCode}
-    count = 1
-    if(count > 0) then
-        buffer = buffer // lexeme
-        exit
-    end if
+    buffer = buffer // lexeme
 else
     exit
 end if
@@ -188,12 +182,10 @@ end do
 if (len(buffer) == 0) then
     lexeme = ""
 else
-if (allocated(lexeme)) deallocate(lexeme)
-    allocate(character(len=len(buffer)) :: lexeme)
-    lexeme = buffer
-    end if
-                    
-`;
+    if (allocated(lexeme)) deallocate(lexeme)
+        allocate(character(len=len(buffer)) :: lexeme)
+        lexeme = buffer
+        end if`;
                 default:
                     return `
                     ${generatedCode}`;
@@ -300,6 +292,20 @@ toAsciiString(char,num) {
         return `char(${char.charCodeAt(0)})`;
     }
 
+}
+ removeLastEndIf(str) {
+    const searchString = "end if";
+    const lastIndex = str.lastIndexOf(searchString);
+    console.log(searchString)
+    if (lastIndex === -1) {
+     
+        return str;
+    }
+
+    const beforeLastOccurrence = str.substring(0, lastIndex);
+    const afterLastOccurrence = str.substring(lastIndex + searchString.length);
+
+    return beforeLastOccurrence + afterLastOccurrence;
 }
 
 }
