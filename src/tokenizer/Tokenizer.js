@@ -22,26 +22,26 @@ export default class Tokenizer extends Visitor {
         return node.expr.accept(this);
     }
     visitString(node) {
-        if (node.isCase !== null) {
-            return `
-if (to_lower(input(cursor:cursor + ${node.val.length - 1})) == to_lower("${node.val}")) then
-    if (allocated(lexeme)) deallocate(lexeme)
-    allocate(character(len=${node.val.length}) :: lexeme)
-    lexeme = input(cursor:cursor + ${node.val.length - 1})
-    cursor = cursor + ${node.val.length}
- 
-            `;
-        } else {
-            return `
-if ("${node.val}" == input(cursor:cursor + ${node.val.length - 1})) then
-    if (allocated(lexeme)) deallocate(lexeme)
-    allocate(character(len=${node.val.length}) :: lexeme)
-    lexeme = input(cursor:cursor + ${node.val.length - 1})
-    cursor = cursor + ${node.val.length}
-
-            `;
+        if(node.isCase){
+        return `
+        search_str = to_lower(input(cursor:cursor + ${node.val.length-1}))
+        if (search_str == "${node.val}") then
+                allocate( character(len=${node.val.length}) :: lexeme)
+                lexeme = input(cursor:cursor + ${node.val.length - 1})
+                cursor = cursor + ${node.val.length}
+                return
+            end if
+            `    
         }
-    }
+        return `
+        if ("${node.val}" == input(cursor:cursor + ${node.val.length - 1})) then
+            allocate( character(len=${node.val.length}) :: lexeme)
+            lexeme = input(cursor:cursor + ${node.val.length - 1})
+            cursor = cursor + ${node.val.length}
+            return
+        end if
+        `;
+        }
     visitClase(node) {
         return `
     i = cursor
