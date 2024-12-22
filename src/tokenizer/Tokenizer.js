@@ -39,17 +39,17 @@ export default class Tokenizer extends Visitor {
             lexeme = input(cursor:cursor + ${node.val.length - 1})
             cursor = cursor + ${node.val.length}
             return
-        end if
-        `;
-        }
+        end if
+    `;
+    }
     visitClase(node) {
         return `
     i = cursor
     ${generateCaracteres(node.chars.filter((node) => typeof node === 'string'))}
     ${node.chars
-                .filter((node) => node instanceof Rango)
-                .map((range) => range.accept(this))
-                .join('\n')}
+        .filter((node) => node instanceof Rango)
+        .map((range) => range.accept(this))
+        .join('\n')}
         `;
     }
     visitRango(node) {
@@ -71,3 +71,4 @@ export default class Tokenizer extends Visitor {
         return '';
     }
 }
+

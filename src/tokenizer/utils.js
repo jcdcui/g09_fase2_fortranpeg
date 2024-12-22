@@ -12,23 +12,20 @@ function nextSym(input, cursor) result(lexeme)
     integer, intent(inout) :: cursor
     character(len=:), allocatable :: lexeme
     integer :: i,j
-    character(len=:), allocatable :: buffer
-    character(len=:), allocatable :: bufferConc
-    integer :: count
-    integer :: carro
+    character(len=9) :: search_str
+
 
     if (cursor > len(input)) then
-        allocate(character(len=3) :: lexeme)
+        allocate( character(len=3) :: lexeme )
         lexeme = "EOF"
         return
     end if
 
-    ${grammar.map((produccion) => produccion.accept(this)).join('\n')}
+    ${grammar.map((produccion) => produccion.accept(tokenizer)).join('\n')}
 
-    print *, "error lexico en col ", cursor, ', "' // input(cursor:cursor) // '"'
+    print *, "error lexico en col ", cursor, ', "'//input(cursor:cursor)//'"'
     lexeme = "ERROR"
 end function nextSym
-
 
 function to_lower(str) result(lower_str)
     character(len=*), intent(in) :: str
@@ -43,8 +40,8 @@ function to_lower(str) result(lower_str)
         end if
     end do
 end function to_lower
-end module tokenizer
-        `;
+end module tokenizer 
+    `;
 }
 
 export function generateCaracteres(chars) {
