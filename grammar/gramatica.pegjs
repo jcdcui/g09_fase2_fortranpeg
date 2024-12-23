@@ -27,7 +27,7 @@ gramatica
   }
 
 producciones
-  = _ id:identificador _ alias:(literales)? _ "=" _ expr:opciones (_";")? {
+  = _ id:identificador _ alias:($literales)? _ "=" _ expr:opciones (_";")? {
     ids.push(id);
     return new n.Producciones(id, expr, alias);
   }
@@ -38,7 +38,7 @@ opciones
   }
 
 union
-  = expr:expresion rest:(_ @expresion !(_ literales? _ "=") )* {
+  = expr:expresion rest:(_ @expresion !(_ $literales? _ "=") )* {
     return new n.Union([expr, ...rest]);
   }
 

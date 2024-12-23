@@ -4,6 +4,7 @@ import { Identificador } from './CST.js';
 
 let concNum = 0;
 let cuantificar  = true;
+let currentId = ""
 export default class Tokenizer extends Visitor {
     generateTokenizer(grammar) {
         return `
@@ -53,7 +54,11 @@ end module tokenizer
     }
 
     visitProducciones(node) {
-
+        if(node.alias){
+            currentId = node.alias.replace(/^"|"$/g, "");
+        }else{
+            currentId = node.id
+        }
         return node.expr.accept(this);
     }
 
@@ -95,7 +100,7 @@ carro = cursor`
                        (!nextExpr || !(nextExpr.expr instanceof Clase || nextExpr.expr instanceof Cadena)) &&
                        (!previousExpr || !(previousExpr.expr instanceof Clase || previousExpr.expr instanceof Cadena))) {
 
-                        concNodos += currentExpr.accept(this) + '\nreturn \nend if'+'\n ! Instancia de Clase o Cadena, con anterior y siguiente siendo otra cosa */2';
+                        concNodos += currentExpr.accept(this) + `\nlexeme = lexeme // '=' // '"'// \'${currentId}\' // '"'\nreturn \nend if\n ! Instancia de Clase o Cadena, con anterior y siguiente siendo otra cosa */2`;
                             
             } else if ((currentExpr.expr instanceof Clase || currentExpr.expr instanceof Cadena) &&
                        (!nextExpr || !(nextExpr.expr instanceof Clase || nextExpr.expr instanceof Cadena)) &&
@@ -136,6 +141,7 @@ return concNodos
 
     visitExpresion(node) {
         let generatedCode = node.expr.accept(this);
+
 
         if (node.qty && !(node.expr instanceof Opciones)) {
             
@@ -207,6 +213,7 @@ else
     }
 
     visitCadena(node) {
+        currentId = node.val
         if (node.isCase !== null) {
             return `
 if (to_lower(input(cursor:cursor + ${node.val.length - 1})) == to_lower("${node.val}")) then
@@ -316,7 +323,7 @@ toAsciiString(char,num) {
         
         if (allocated(lexeme)) deallocate(lexeme)
         allocate(character(len=len(bufferConc)) :: lexeme)
-        lexeme = bufferConc
+        lexeme = bufferConc // '=' // '"'// \'${currentId}\' // '"'
         return
     end if
     ${this.getEndIfs(num)}`
