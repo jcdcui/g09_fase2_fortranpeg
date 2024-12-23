@@ -427,6 +427,7 @@ if (${conditions}) then
   }
 
   getEndConcat(num) {
+    currentId = ruleName
     console.log("NUM" + num);
     let endConc = `
     bufferConc = bufferConc // lexeme
@@ -436,6 +437,7 @@ if (${conditions}) then
         if (allocated(lexeme)) deallocate(lexeme)
         allocate(character(len=len(bufferConc)) :: lexeme)
         lexeme = '"'//get_symbol(bufferConc) //'"'// '=' // \'${currentId}\' 
+        return
     end if
     ${this.getEndIfs(num)}`;
 
