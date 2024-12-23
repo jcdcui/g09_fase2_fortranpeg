@@ -182,7 +182,7 @@ carro = cursor`;
             if(currentExpr.expr.val.length == 1){
                tempName  = currentExpr.expr.val
             }else{
-                tempName = currentId
+                tempName = currentExpr.expr.val
             }
           }else{
             tempName = currentId
