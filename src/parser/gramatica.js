@@ -294,7 +294,7 @@ function peg$parse(input, options) {
     return new n.Identificador(id);
   };
   var peg$f6 = function(val, isCase) {
-    return new n.String(val.replace(/['"]/g, ''), isCase);
+    return new n.Cadena(val.replace(/['"]/g, ''), isCase);
   };
   var peg$f7 = function(chars, isCase) {
     return new n.Clase(chars, isCase);

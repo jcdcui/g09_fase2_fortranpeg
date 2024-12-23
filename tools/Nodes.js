@@ -3,7 +3,7 @@ const nodes = {
     Opciones: ['exprs'],
     Union: ['exprs'],
     Expresion: ['expr', 'label', 'qty'],
-    String: ['val', 'isCase'],
+    Cadena: ['val', 'isCase'],
     Clase: ['chars', 'isCase'],
     Rango: ['bottom', 'top'],
     Identificador: ['id'],

@@ -57,7 +57,7 @@ expresiones
     return new n.Identificador(id);
   }
   / val:$literales isCase:"i"? {
-    return new n.String(val.replace(/['"]/g, ''), isCase);
+    return new n.Cadena(val.replace(/['"]/g, ''), isCase);
   }
   / "(" _ @opciones _ ")"
   / chars:clase isCase:"i"? {

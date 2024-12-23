@@ -50,7 +50,7 @@ export class Expresion extends Node {
     }
 }
     
-export class String extends Node {
+export class Cadena extends Node {
     constructor(val, isCase) {
         super();
         this.val = val;
@@ -58,7 +58,7 @@ export class String extends Node {
     }
 
     accept(visitor) {
-        return visitor.visitString(this);
+        return visitor.visitCadena(this);
     }
 }
     

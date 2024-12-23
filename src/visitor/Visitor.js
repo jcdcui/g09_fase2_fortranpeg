@@ -5,7 +5,7 @@ export default class Visitor {
 	visitOpciones(node) {}
 	visitUnion(node) {}
 	visitExpresion(node) {}
-	visitString(node) {}
+	visitCadena(node) {}
 	visitClase(node) {}
 	visitRango(node) {}
 	visitIdentificador(node) {}
