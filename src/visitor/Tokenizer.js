@@ -62,30 +62,43 @@ function to_lower(str) result(lower_str)
     end do
 end function to_lower
 
-function get_symbol(input_string) result(symbol)
+  function get_symbol(input_string) result(symbol)
     character(len=*), intent(in) :: input_string
     character(len=:), allocatable :: symbol
+    character(len=len(input_string)*2) :: temp_string
+    integer :: i, pos, original_len
 
-    if (len(input_string) == 1) then
-      
-      select case (input_string)
+    ! Inicializar la cadena temporal con suficiente longitud
+    pos = 1
+    original_len = len(input_string)
+    temp_string = ''
+
+    ! Recorrer la cadena en busca de caracteres especiales
+    do i = 1, original_len
+      select case (input_string(i:i))
       case (' ')
-        symbol = '_'
+        temp_string(pos:pos) = '_'
+        pos = pos + 1
       case (char(9))   ! Tabulador
-        symbol = '\\t'
+        temp_string(pos:pos+1) = '\\t'
+        pos = pos + 2
       case (char(10))  ! Salto de línea
-        symbol = '\\n'
+        temp_string(pos:pos+1) = '\\n'
+        pos = pos + 2
       case (char(13))  ! Retorno de carro
-        symbol = '\\r'
+        temp_string(pos:pos+1) = '\\r'
+        pos = pos + 2
       case default
-        symbol = input_string
+        temp_string(pos:pos) = input_string(i:i)
+        pos = pos + 1
       end select
-    else
-      
-      symbol = input_string
-    end if
+    end do
 
-end function get_symbol
+    ! Asignar el valor a la cadena de salida
+    allocate(character(len=pos-1) :: symbol)
+    symbol = temp_string(:pos-1)
+
+  end function get_symbol
 
 end module parser
 
@@ -111,11 +124,12 @@ end module parser
   visitUnion(node) {
     const nullQtyCount = node.exprs.filter((expr) => expr.qty).length;
     let final = "";
+    let tempName = ""
 
     for (let i = 0; i < node.exprs.length - nullQtyCount; i++) {
       final += "end if\n";
     }
-
+    
     let unirExp = `\nbufferConc = bufferConc // lexeme\n`;
     let initConcat = `
 bufferConc = ""
@@ -128,13 +142,6 @@ carro = cursor`;
       let nextExpr = node.exprs[i + 1];
       console.log("START" + concNum);
 
-      if(currentExpr.expr.val){
-        if(currentExpr.expr.val.length == 1){
-            currentId = currentExpr.expr.val
-        }else{
-            currentId = ruleName
-        }
-      }
       if (
         (currentExpr.expr instanceof Clase ||
           currentExpr.expr instanceof Cadena) &&
@@ -151,6 +158,7 @@ carro = cursor`;
             unirExp +
             "\n ! Instancia de Clase o Cadena, con anterior y siguiente también siendo de Clase o Cadena1";
         } else {
+            
           concNum += 1;
           concNodos +=
             currentExpr.accept(this) +
@@ -170,9 +178,18 @@ carro = cursor`;
             previousExpr.expr instanceof Cadena
           ))
       ) {
+        if(currentExpr.expr instanceof Cadena){
+            if(currentExpr.expr.val.length == 1){
+               tempName  = currentExpr.expr.val
+            }else{
+                tempName = currentId
+            }
+          }else{
+            tempName = currentId
+          }
         concNodos +=
           currentExpr.accept(this) +
-          `\nlexeme = '"' // get_symbol(lexeme) //'"' // '=' //  \'${currentId}\' \nreturn \nend if\n ! Instancia de Clase o Cadena, con anterior y siguiente siendo otra cosa */2`;
+          `\nlexeme = '"' // get_symbol(lexeme) //'"' // '=' //  \'${tempName}\' \nreturn \nend if\n ! Instancia de Clase o Cadena, con anterior y siguiente siendo otra cosa */2`;
       } else if (
         (currentExpr.expr instanceof Clase ||
           currentExpr.expr instanceof Cadena) &&
@@ -184,7 +201,10 @@ carro = cursor`;
         (previousExpr.expr instanceof Clase ||
           previousExpr.expr instanceof Cadena)
       ) {
+
+        
         if (!currentExpr.qty) {
+
           concNum += 1;
           concNodos +=
             currentExpr.accept(this) +
@@ -309,6 +329,10 @@ else
   }
 
   visitCadena(node) {
+    if (ruleName == currentId){
+        currentId = ""
+    }
+    currentId = currentId + node.val
     
     
     
@@ -336,6 +360,7 @@ if ("${node.val}" == input(cursor:cursor + ${node.val.length - 1})) then
   }
 
   visitClase(node) {
+    currentId = ruleName
     const isCase = node.isCase !== null;
     let conditions = ``;
 
@@ -427,7 +452,7 @@ if (${conditions}) then
   }
 
   getEndConcat(num) {
-    currentId = ruleName
+    //this.removePrefix(currentId,ruleName)
     console.log("NUM" + num);
     let endConc = `
     bufferConc = bufferConc // lexeme
@@ -443,5 +468,13 @@ if (${conditions}) then
 
     return endConc;
   }
+  
+  removePrefix(namecad, prefix) {
+    if (namecad.startsWith(prefix)) {
+        return namecad.slice(prefix.length);
+    }
+    return namecad;
+}
+
 
 }
